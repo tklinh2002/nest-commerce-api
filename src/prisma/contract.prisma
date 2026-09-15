@@ -29,7 +29,7 @@ model User {
   addresses    Address[]
   orders       Order[]
   cart         Cart?
-  refreshToken String?   // hash refresh token hiện tại (hoặc lưu qua Redis)
+  refreshToken String?   // current hashed refresh token (or store via Redis)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @default(now())
 }
@@ -61,7 +61,7 @@ model Product {
   description String?
   price       Decimal
   stock       Int         @default(0)
-  images      String[]    // nhiều ảnh thay vì 1 imageUrl
+  images      String[]    // multiple images instead of a single imageUrl
   categoryId  String
   category    Category    @relation(fields: [categoryId], references: [id])
   orderItems  OrderItem[]
