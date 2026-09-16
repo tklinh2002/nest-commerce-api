@@ -3,22 +3,42 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule, ObserveInstrument } from './app.module.js';
 import helmet from 'helmet';
 import { ValidationPipe } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'node:path';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     instrument: ObserveInstrument,
   });
 
-  // 1. Enable Helmet (Auto-adds security HTTP headers to prevent XSS, Clickjacking, etc.)
+  // 1. Enable Swagger UI Documentation
+  // This is a UI for testing our API endpoints
+  const config = new DocumentBuilder()
+    .setTitle('E-Commerce API') // Your API Title
+    .setDescription('API documentation for E-Commerce Application') // API Description
+    .setVersion('1.0') // API Version
+    .addBearerAuth() // Tells Swagger to look for Bearer Tokens (JWT)
+    .build();
+  
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('docs', app, document); // Access docs at http://localhost:3000/docs
+
+  // 2. Serve Static Assets (Frontend Files)
+  // This allows you to run the backend alone and access the frontend via http://localhost:3000/docs
+  app.useStaticAssets(join(process.cwd(), 'public'));
+
+  // 3. Enable Helmet (Auto-adds security HTTP headers to prevent XSS, Clickjacking, etc.)
   app.use(helmet());
 
-   // 2. Enable CORS (Only allow Frontend at localhost:3001 to call our API)
+   // 4. Enable CORS (Only allow Frontend at localhost:3001 to call our API)
   app.enableCors({
     origin: ['http://localhost:3001', 'http://localhost:3000'],
     credentials: true,
   });
 
-    // 3. Enable global ValidationPipe (Auto-validates incoming requests based on DTOs)
+    // 5. Enable global ValidationPipe (Auto-validates incoming requests based on DTOs)
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true, // Strips away any unexpected fields not defined in the DTO
@@ -27,6 +47,7 @@ async function bootstrap() {
     }),
   );
 
+  
   await app.listen(process.env.PORT ?? 3000);
 }
 await bootstrap();

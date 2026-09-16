@@ -10,6 +10,9 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import Joi from 'joi';
 import { APP_GUARD } from '@nestjs/core';
 import { UsersModule } from './users/users.module.js';
+import { CategoriesModule } from './categories/categories.module.js';
+import { ProductsModule } from './products/products.module.js';
+import { UploadsModule } from './uploads/uploads.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -37,6 +40,9 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
       ttl: 60000,
       limit: 100,
     }]),
+    CategoriesModule,
+    ProductsModule,
+    UploadsModule,
   ],
   controllers: [AppController],
   providers: [
