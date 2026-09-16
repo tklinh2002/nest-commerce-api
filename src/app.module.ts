@@ -13,6 +13,8 @@ import { UsersModule } from './users/users.module.js';
 import { CategoriesModule } from './categories/categories.module.js';
 import { ProductsModule } from './products/products.module.js';
 import { UploadsModule } from './uploads/uploads.module.js';
+import { CartModule } from './cart/cart.module.js';
+import { OrderModule } from './order/order.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -43,6 +45,8 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     CategoriesModule,
     ProductsModule,
     UploadsModule,
+    CartModule,
+    OrderModule,
   ],
   controllers: [AppController],
   providers: [

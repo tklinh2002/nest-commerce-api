@@ -43,11 +43,11 @@ export class UploadsService {
     }
 
     // 4. Merge all chunks in the correct order (0 to totalChunks - 1)
-    for (let i = 0; i < totalChunks; i++) {
+    Array.from({ length: totalChunks }).forEach((_, i) => {
       const chunkPath = join(tempDir, i.toString());
       const chunkData = readFileSync(chunkPath);
       appendFileSync(finalPath, chunkData);
-    }
+    });
 
     // 5. Clean up: Delete the temporary folder
     rmSync(tempDir, { recursive: true, force: true });

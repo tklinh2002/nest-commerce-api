@@ -18,19 +18,14 @@ export class ProductsService {
   async findAll(page: number = 1, limit: number = 10, categoryId?: string, search?: string) {
     const offset = (page - 1) * limit;
 
-   // Start with an empty query (gets everything)
-    let query = db.orm.public.Product.where({});
-    // If categoryId is provided, chain a where condition
-    if (categoryId) {
-      query = query.where({ categoryId });
-    }
-    // If search keyword is provided, chain an ILIKE condition
-    if (search) {
-      // Prisma 8 proxy syntax for ILIKE (case-insensitive search)
-      query = query.where((p) => p.name.ilike(`%${search}%`)); // TODO: Leading wildcards prevent B-tree index usage
-    }
+    // Build query conditionally using const to strictly follow user rules
+    const baseQuery = db.orm.public.Product.where({});
+    const queryWithCategory = categoryId ? baseQuery.where({ categoryId }) : baseQuery;
+    const finalQuery = search 
+      ? queryWithCategory.where((p) => p.name.ilike(`%${search}%`)) // TODO: Leading wildcards prevent B-tree index usage
+      : queryWithCategory;
 
-    return await query
+    return await finalQuery
       .limit(limit)
       .offset(offset)
       .all();
