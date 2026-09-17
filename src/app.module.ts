@@ -19,6 +19,9 @@ import { OrderModule } from './order/order.module.js';
 import { BullModule } from '@nestjs/bullmq';
 import { ConfigService } from '@nestjs/config';
 import { NotificationsModule } from './notifications/notifications.module.js';
+import { LoggerModule } from 'nestjs-pino';
+import { HealthModule } from './health/health.module.js';
+
 
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
@@ -34,6 +37,20 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
         DATABASE_URL: Joi.string().required(),
       }),
     }),
+
+    // Setup structured logging using Pino
+    LoggerModule.forRoot({
+      pinoHttp: {
+        // Format logs nicely during development
+        transport: {
+          target: 'pino-pretty',
+          options: {
+            singleLine: true, // Keep logs on one line so it's easier to read
+          },
+        },
+      },
+    }),
+
     // Distributed tracing, auto-correlated logs, request/job metrics, error
     // telemetry, alarms, and more — out of the box. Sign up at https://observe.nestjs.com
     ObserveModule.forRoot({
@@ -63,6 +80,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     CartModule,
     OrderModule,
     NotificationsModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [

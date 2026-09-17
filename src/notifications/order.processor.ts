@@ -1,7 +1,7 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
-import { OrderService } from '../order/order.service';
+import { OrderService } from '../order/order.service.js';
 
 // Listen to all jobs added to the 'order-queue'
 @Processor('order-queue')

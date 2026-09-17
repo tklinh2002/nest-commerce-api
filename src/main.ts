@@ -6,12 +6,17 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'node:path';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor.js';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
+import { Logger } from 'nestjs-pino';
 
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     instrument: ObserveInstrument,
   });
+
+  app.useLogger(app.get(Logger));
 
   // 1. Enable Swagger UI Documentation
   // This is a UI for testing our API endpoints
@@ -47,6 +52,9 @@ async function bootstrap() {
     }),
   );
 
+    // Apply Interceptor & Filter globally
+  app.useGlobalInterceptors(new TransformInterceptor());
+  app.useGlobalFilters(new AllExceptionsFilter());
   
   await app.listen(process.env.PORT ?? 3000);
 }
