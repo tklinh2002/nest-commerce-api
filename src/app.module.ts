@@ -21,6 +21,10 @@ import { ConfigService } from '@nestjs/config';
 import { NotificationsModule } from './notifications/notifications.module.js';
 import { LoggerModule } from 'nestjs-pino';
 import { HealthModule } from './health/health.module.js';
+import { CouponModule } from './coupon/coupon.module.js';
+import { ReviewModule } from './review/review.module.js';
+import { WishlistModule } from './wishlist/wishlist.module.js';
+import { AdminModule } from './admin/admin.module.js';
 
 
 
@@ -81,6 +85,10 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     OrderModule,
     NotificationsModule,
     HealthModule,
+    CouponModule,
+    ReviewModule,
+    WishlistModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [

@@ -1,5 +1,6 @@
 import { db } from './prisma/db.js';
 import * as bcrypt from 'bcrypt';
+import { Temporal } from 'temporal-polyfill';
 
 async function main() {
   console.log('🌱 Starting heavy database seed...');
@@ -179,15 +180,54 @@ async function main() {
     }
   ];
 
+  const createdProducts = [];
   for (const p of products) {
-    await db.orm.public.Product.create(p);
+    const product = await db.orm.public.Product.create(p);
+    createdProducts.push(product);
   }
 
-  console.log(`✅ Successfully seeded 1 User, 1 Address, 5 Categories and ${products.length} Products!`);
+  // ----------------------------------------------------
+  // 4. Create Coupon, Wishlist & Review
+  // ----------------------------------------------------
+  console.log('Creating Coupon, Wishlist & Review...');
+  
+  await db.orm.public.Coupon.create({
+    code: 'WELCOME10',
+    discountType: 'PERCENTAGE',
+    discountValue: '10', // 10%
+    maxDiscount: '500000', // Max discount 500k
+    endDate: Temporal.Instant.fromEpochMilliseconds(Date.now() + 30 * 24 * 60 * 60 * 1000), // Valid for 30 days
+    usageLimit: 100,
+  });
+
+  const wishlist = await db.orm.public.Wishlist.create({
+    userId: mockUser.id,
+  });
+
+  if (createdProducts.length > 0) {
+    const firstProduct = createdProducts[0];
+    
+    // Add first product to user's wishlist
+    await db.orm.public.WishlistItem.create({
+      wishlistId: wishlist.id,
+      productId: firstProduct.id,
+    });
+
+    // Add a 5-star review for the first product
+    await db.orm.public.Review.create({
+      userId: mockUser.id,
+      productId: firstProduct.id,
+      rating: 5,
+      comment: 'Amazing product! Highly recommended.',
+    });
+  }
+
+  console.log(`✅ Successfully seeded 1 User, 1 Address, 5 Categories, ${products.length} Products, 1 Coupon, 1 Wishlist, and 1 Review!`);
   console.log(`\nTest User Login:`);
   console.log(`Email: test@example.com`);
   console.log(`Password: password123`);
   console.log(`Address ID for Checkout: ${mockAddress.id}`);
+  console.log(`Sample Coupon Code: WELCOME10`);
   
   await db.close();
   process.exit(0);

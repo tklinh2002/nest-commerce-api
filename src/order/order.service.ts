@@ -3,6 +3,7 @@ import { db } from '../prisma/db.js';
 import { CheckoutDto } from './dto/order.dto.js';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { CouponService } from '../coupon/coupon.service.js';
 
 @Injectable()
 export class OrderService {
@@ -10,10 +11,11 @@ export class OrderService {
     // Connect to the 'email-queue' defined in AppModule
     @InjectQueue('email-queue') private readonly emailQueue: Queue,
     @InjectQueue('order-queue') private readonly orderQueue: Queue,
+    private readonly couponService: CouponService,
   ) {}
 
   async checkout(userId: string, userEmail: string, checkoutDto: CheckoutDto) {
-    const { addressId } = checkoutDto;
+    const { addressId, couponCode } = checkoutDto;
 
     // 1. Start a database transaction
     // Everything inside this block is strictly protected. If any error is thrown, it rolls back!
@@ -28,27 +30,30 @@ export class OrderService {
       if (!cart || cart.items.length === 0) {
         throw new BadRequestException('Cart is empty');
       }
-
       // 3. Verify stock and calculate total amount (Zero 'let' using Array.reduce)
-      const totalAmount = cart.items.reduce((sum, item) => {
-        // If someone else bought it first and stock is empty, throw error to rollback
+      const originalTotal = cart.items.reduce((sum, item) => {
         if (item.product.stock < item.quantity) {
           throw new BadRequestException(`Not enough stock for ${item.product.name}`);
         }
         return sum + (Number(item.product.price) * item.quantity);
       }, 0);
-
-      // 4. Create the Order in Database
+      // If a couponCode is provided, validate it and calculate the discount amount
+      const discountResult = couponCode 
+        ? await this.couponService.validateCoupon(couponCode, originalTotal)
+        : { discountAmount: 0, couponId: null };
+      // Final total = Original total - Discount (ensure it doesn't go below 0)
+      const finalAmount = Math.max(0, originalTotal - discountResult.discountAmount);
       const order = await tx.orm.public.Order.create({
         userId,
         addressId,
-        totalAmount: totalAmount.toString(), // Prisma 8 Decimal maps to String
+        couponId: discountResult.couponId,
+        discountAmount: String(discountResult.discountAmount), // Prisma 8 Decimal fields require a String
+        totalAmount: String(finalAmount),
       });
 
       // 5. Move CartItems to OrderItems and Decrease Stock
       // Using 'for...of' with 'const' complies with the "no let" rule perfectly!
       for (const item of cart.items) {
-        // Decrease stock
         await tx.orm.public.Product
           .where({ id: item.productId })
           .update({ stock: item.product.stock - item.quantity });
@@ -64,9 +69,13 @@ export class OrderService {
 
       // 6. Clear the user's cart since they just bought everything
       await tx.orm.public.CartItem.where({ cartId: cart.id }).delete();
-
       return order;
     });
+
+    // Increment the usage count for the coupon if one was successfully applied
+    if (checkoutDto.couponCode) {
+      await this.couponService.incrementUsage(finalOrder.couponId!);
+    }
 
     // 7. Push a background job to the queue AFTER the transaction successfully commits.
     // We don't use 'await' here because we don't want to block the HTTP response!

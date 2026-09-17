@@ -34,7 +34,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'1bef933e4d52339cf5f8693d445ab8a010d663882aae1d3561a0f357823bfb22'>;
+  StorageHashBase<'a2b9aea173110447564ac09d4cc572e352ca76928287d3ff78175d61eba68065'>;
 export type ExecutionHash =
   ExecutionHashBase<'d01e0ae18434f7b8b3a816600001b1f07a1c84d5f376993bc72607eb82f38f3e'>;
 export type ProfileHash =
@@ -289,7 +289,7 @@ export type FieldOutputTypes = {
       readonly status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
       readonly paymentStatus: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
       readonly couponId: CodecTypes['pg/text@1']['output'] | null;
-      readonly discountAmount: CodecTypes['pg/numeric@1']['output'] | null;
+      readonly discountAmount: CodecTypes['pg/numeric@1']['output'];
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
@@ -392,7 +392,7 @@ export type FieldInputTypes = {
       readonly status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
       readonly paymentStatus: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
       readonly couponId: CodecTypes['pg/text@1']['input'] | null;
-      readonly discountAmount: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly discountAmount: CodecTypes['pg/numeric@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
@@ -491,7 +491,7 @@ export type StorageColumnTypes = {
       readonly addressId: CodecTypes['pg/text@1']['output'];
       readonly couponId: CodecTypes['pg/text@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
-      readonly discountAmount: CodecTypes['pg/numeric@1']['output'] | null;
+      readonly discountAmount: CodecTypes['pg/numeric@1']['output'];
       readonly id: CodecTypes['pg/text@1']['output'];
       readonly paymentStatus: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
       readonly status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
@@ -594,7 +594,7 @@ export type StorageColumnInputTypes = {
       readonly addressId: CodecTypes['pg/text@1']['input'];
       readonly couponId: CodecTypes['pg/text@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
-      readonly discountAmount: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly discountAmount: CodecTypes['pg/numeric@1']['input'];
       readonly id: CodecTypes['pg/text@1']['input'];
       readonly paymentStatus: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
       readonly status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
@@ -733,7 +733,7 @@ export namespace Models {
     status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
     paymentStatus: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
     couponId: CodecTypes['pg/text@1']['output'] | null;
-    discountAmount: CodecTypes['pg/numeric@1']['output'] | null;
+    discountAmount: CodecTypes['pg/numeric@1']['output'];
     createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     address: public_Address;
@@ -1155,7 +1155,11 @@ type ContractBase = Omit<
                 readonly discountAmount: {
                   readonly nativeType: 'numeric';
                   readonly codecId: 'pg/numeric@1';
-                  readonly nullable: true;
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/numeric@1', '0'>;
+                  };
                 };
                 readonly createdAt: {
                   readonly nativeType: 'timestamptz';
@@ -2010,7 +2014,7 @@ type ContractBase = Omit<
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly discountAmount: {
-                readonly nullable: true;
+                readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/numeric@1' };
               };
               readonly createdAt: {

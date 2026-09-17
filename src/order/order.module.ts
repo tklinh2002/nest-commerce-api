@@ -3,6 +3,7 @@ import { OrderController } from './order.controller.js';
 import { OrderService } from './order.service.js';
 import { BullModule } from '@nestjs/bullmq';
 import { OrderProcessor } from '../notifications/order.processor.js';
+import { CouponModule } from '../coupon/coupon.module.js';
 
 @Module({
   imports: [
@@ -11,7 +12,8 @@ import { OrderProcessor } from '../notifications/order.processor.js';
     }),
     BullModule.registerQueue({ 
       name: 'order-queue'
-    })
+    }),
+    CouponModule
   ],
   controllers: [OrderController],
   providers: [OrderService, OrderProcessor]

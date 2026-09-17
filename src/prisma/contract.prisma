@@ -5,6 +5,11 @@ enum Role {
   ADMIN
 }
 
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
 enum OrderStatus {
   PENDING
   PROCESSING
@@ -29,6 +34,8 @@ model User {
   addresses    Address[]
   orders       Order[]
   cart         Cart?
+  reviews      Review[]
+  wishlist     Wishlist?
   refreshToken String?   // current hashed refresh token (or store via Redis)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @default(now())
@@ -65,7 +72,9 @@ model Product {
   categoryId  String
   category    Category    @relation(fields: [categoryId], references: [id])
   orderItems  OrderItem[]
-  cartItems   CartItem[]
+  cartItems     CartItem[]
+  reviews       Review[]
+  wishlistItems WishlistItem[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @default(now())
 }
@@ -98,6 +107,9 @@ model Order {
   totalAmount   Decimal
   status        OrderStatus   @default(PENDING)
   paymentStatus PaymentStatus @default(PENDING)
+  couponId      String?
+  coupon        Coupon?       @relation(fields: [couponId], references: [id])
+  discountAmount Decimal?      // Discount applied
   items         OrderItem[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @default(now())
@@ -111,4 +123,51 @@ model OrderItem {
   product   Product  @relation(fields: [productId], references: [id])
   price     Decimal
   quantity  Int
+}
+
+model Coupon {
+  id              String       @id @default(uuid())
+  code            String       @unique
+  discountType    DiscountType
+  discountValue   Decimal
+  minOrderAmount  Decimal?     // Minimum order value required
+  maxDiscount     Decimal?     // Maximum discount amount (for PERCENTAGE)
+  startDate       DateTime     @default(now())
+  endDate         DateTime
+  usageLimit      Int?         // Maximum times this coupon can be used
+  usedCount       Int          @default(0)
+  orders          Order[]
+  createdAt       DateTime     @default(now())
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int      // 1 - 5
+  comment   String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId]) // A user can only review a product once
+}
+
+model Wishlist {
+  id        String         @id @default(uuid())
+  userId    String         @unique
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     WishlistItem[]
+  updatedAt DateTime       @default(now())
+}
+
+model WishlistItem {
+  id         String   @id @default(uuid())
+  wishlistId String
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([wishlistId, productId]) // A product can only be in a wishlist once
 }
