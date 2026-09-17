@@ -1,10 +1,34 @@
 import { db } from './prisma/db.js';
+import * as bcrypt from 'bcrypt';
 
 async function main() {
   console.log('🌱 Starting heavy database seed...');
 
+  console.log('🌱 Starting heavy database seed...');
+
   // ----------------------------------------------------
-  // 1. Create Categories
+  // 1. Create Mock User & Address
+  // ----------------------------------------------------
+  console.log('Creating Mock User and Address...');
+  const hashedPassword = await bcrypt.hash('password123', 10);
+  const mockUser = await db.orm.public.User.create({
+    email: 'test@example.com',
+    password: hashedPassword,
+    fullName: 'Test User',
+    role: 'USER',
+  });
+
+  const mockAddress = await db.orm.public.Address.create({
+    userId: mockUser.id,
+    receiver: 'Test User',
+    phone: '0987654321',
+    street: '123 E-commerce St',
+    city: 'Tech City',
+    isDefault: true,
+  });
+
+  // ----------------------------------------------------
+  // 2. Create Categories
   // ----------------------------------------------------
   console.log('Creating Categories...');
   const catSmartphone = await db.orm.public.Category.create({ name: 'Smartphones', slug: 'smartphones' });
@@ -14,7 +38,7 @@ async function main() {
   const catAccessory = await db.orm.public.Category.create({ name: 'Accessories', slug: 'accessories' });
 
   // ----------------------------------------------------
-  // 2. Create Products
+  // 3. Create Products
   // ----------------------------------------------------
   console.log('Creating Products...');
   const products = [
@@ -155,14 +179,16 @@ async function main() {
     }
   ];
 
-  // Insert all products using a loop
   for (const p of products) {
     await db.orm.public.Product.create(p);
   }
 
-  console.log(`✅ Successfully seeded 5 Categories and ${products.length} Products!`);
+  console.log(`✅ Successfully seeded 1 User, 1 Address, 5 Categories and ${products.length} Products!`);
+  console.log(`\nTest User Login:`);
+  console.log(`Email: test@example.com`);
+  console.log(`Password: password123`);
+  console.log(`Address ID for Checkout: ${mockAddress.id}`);
   
-  // Close the database connection and exit
   await db.close();
   process.exit(0);
 }
