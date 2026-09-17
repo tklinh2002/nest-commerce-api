@@ -13,7 +13,8 @@ export class OrderController {
   @Post('checkout')
   checkout(@Req() req: RequestWithUser, @Body() checkoutDto: CheckoutDto) {
     const userId = req.user.userId;
-    return this.orderService.checkout(userId, checkoutDto);
+    const userEmail = req.user.email;
+    return this.orderService.checkout(userId, userEmail, checkoutDto);
   }
 
   // GET /orders
@@ -32,4 +33,13 @@ export class OrderController {
     const userId = req.user.userId;
     return this.orderService.cancelOrder(userId, orderId);
   }
+
+  // POST /orders/:id/payment-webhook
+  // Normally this doesn't use JWT, it uses a signature verification logic (e.g. HMAC from VNPay)
+  // For the sake of this tutorial, we will keep it simple and unprotected.
+  @Post(':id/payment-webhook')
+  handlePaymentWebhook(@Param('id') orderId: string) {
+    return this.orderService.handlePaymentWebhook(orderId);
+  }
+
 }

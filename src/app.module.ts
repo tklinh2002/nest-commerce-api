@@ -16,6 +16,11 @@ import { UploadsModule } from './uploads/uploads.module.js';
 import { CartModule } from './cart/cart.module.js';
 import { OrderModule } from './order/order.module.js';
 
+import { BullModule } from '@nestjs/bullmq';
+import { ConfigService } from '@nestjs/config';
+import { NotificationsModule } from './notifications/notifications.module.js';
+
+
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
 @Module({
@@ -42,11 +47,22 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
       ttl: 60000,
       limit: 100,
     }]),
+    // Connect to Redis for BullMQ
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        connection: {
+          host: configService.get<string>('REDIS_HOST') || 'localhost',
+          port: configService.get<number>('REDIS_PORT') || 6379,
+        },
+      }),
+    }),
     CategoriesModule,
     ProductsModule,
     UploadsModule,
     CartModule,
     OrderModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [

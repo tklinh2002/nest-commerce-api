@@ -1,16 +1,23 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { db } from '../prisma/db.js';
 import { CheckoutDto } from './dto/order.dto.js';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 @Injectable()
 export class OrderService {
+  constructor(
+    // Connect to the 'email-queue' defined in AppModule
+    @InjectQueue('email-queue') private readonly emailQueue: Queue,
+    @InjectQueue('order-queue') private readonly orderQueue: Queue,
+  ) {}
 
-  async checkout(userId: string, checkoutDto: CheckoutDto) {
+  async checkout(userId: string, userEmail: string, checkoutDto: CheckoutDto) {
     const { addressId } = checkoutDto;
 
     // 1. Start a database transaction
     // Everything inside this block is strictly protected. If any error is thrown, it rolls back!
-    return await db.transaction(async (tx) => {
+    const finalOrder = await db.transaction(async (tx) => {
       
       // 2. Fetch the user's cart and all nested items
       const cart = await tx.orm.public.Cart
@@ -60,6 +67,24 @@ export class OrderService {
 
       return order;
     });
+
+    // 7. Push a background job to the queue AFTER the transaction successfully commits.
+    // We don't use 'await' here because we don't want to block the HTTP response!
+    this.emailQueue.add('send-order-confirmation', {
+      orderId: finalOrder.id,
+      userEmail: userEmail,
+    });
+
+    // 8. Push a delayed job to automatically cancel the order if not paid in 15 minutes
+    // We pass the delay option (15 minutes in milliseconds)
+    this.orderQueue.add(
+      'check-payment-timeout',
+      { orderId: finalOrder.id, userId: userId },
+      { delay: 15 * 60 * 1000 } 
+    );
+      
+    return finalOrder;
+
   }
 
     // Fetch order history for the user
@@ -106,6 +131,32 @@ export class OrderService {
 
       return cancelledOrder;
     });
+  }
+
+    // Webhook endpoint called by Payment Gateway (VNPay, Stripe, etc.)
+  async handlePaymentWebhook(orderId: string) {
+    const order = await db.orm.public.Order.where({ id: orderId }).first();
+    
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.paymentStatus === 'PAID') {
+      return { message: 'Order is already paid' };
+    }
+
+    // Update payment status to PAID and order status to PROCESSING
+    const updatedOrder = await db.orm.public.Order
+      .where({ id: orderId })
+      .update({ 
+        paymentStatus: 'PAID',
+        status: 'PROCESSING' // Now the warehouse can start packing
+      });
+
+    return {
+      message: 'Payment verified and order updated successfully',
+      order: updatedOrder
+    };
   }
 
 }
