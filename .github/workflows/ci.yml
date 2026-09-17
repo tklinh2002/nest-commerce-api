@@ -9,7 +9,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x] # Test the build on both LTS versions
+        node-version: [20.x] # Prisma 8 toolchain requires Node.js 20+
 
     steps:
     - uses: actions/checkout@v4
